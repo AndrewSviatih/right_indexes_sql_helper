@@ -1,49 +1,40 @@
-##import pandas as pd # type: ignore
 import os
 import glob
+import queriesTable
+import pandas as pd
 
-directory = '../put_data_here/'
+def queries_counter(queries_cnt: queriesTable.QueriesTables):
 
-# Нахождение всех .txt файлов в этой директории
-text_files = glob.glob(os.path.join(directory, '*.txt'))
+    directory = '../put_queries_here/'
+    text_files = glob.glob(os.path.join(directory, '*.txt *.sql *.log'))
 
-# Словарь для хранения результатов
-where_clauses = {}
+    for file_path in text_files:
+        with open(file_path, 'r') as file:
+            content = file.read()
+            queries = content.split(';')
 
-# Перебор всех файлов
-for file_path in text_files:
-    with open(file_path, 'r') as file:
-        content = file.read()
-        
-        # Разделение содержимого на отдельные SQL запросы
-        queries = content.split(';')
-        
-        # Обработка каждого запроса отдельно
-        for query in queries:
-            where_index = query.upper().find('WHERE')
-            
-            if where_index != -1:
-                # Выделение части запроса после 'WHERE'
-                where_clause = query[where_index + 5:]  # +5 для пропуска самого слова 'WHERE'
+            for query in queries:
+                FROM_index = query.upper().find('FROM')
+                if FROM_index != -1:
+                    from_clause = query[FROM_index + 5:] #skip FROM + space
+                    table_name = from_clause.split()[0].strip()  # Get the table name after FROM
+                    if table_name not in queries_cnt.tables:
+                        queries_cnt.add_table(table_name)
+
+                WHERE_index = query.upper().find('WHERE')
                 
-                # Очистка и обрезка условий WHERE до следующего ключевого SQL слова или до конца строки
-                for keyword in ['>', '<', '=']:
-                    keyword_index = where_clause.upper().find(keyword)
-                    if keyword_index != -1:
-                        where_clause = where_clause[:keyword_index]
-                        break
-                
-                # Сохранение извлеченной части в словарь
-                where_clauses[os.path.basename(file_path)] = where_clauses.get(os.path.basename(file_path), []) + [where_clause.strip()]
-
-# Вывод извлеченных частей условий WHERE
-for filename, clauses in where_clauses.items():
-    print(f"{filename}:")
-    for clause in clauses:
-        print(clause)
-    print()  # Добавляет пустую строку для разделения вывода по файлам
-        
-
+                if WHERE_index != -1:
+                    where_clause = query[WHERE_index + 5:]
+                    for keyword in ['>', '<', '=']:
+                        keyword_index = where_clause.upper().find(keyword)
+                        if keyword_index != -1:
+                            if where_clause[:keyword_index] not in queries_cnt.tables:
+                                queries_cnt.add_column(table_name, where_clause[:keyword_index])
+                            if keyword in ['>', '<']:
+                                queries_cnt.tables[table_name].columns[where_clause[:keyword_index]].moreLessThan += 1
+                            else:
+                                queries_cnt.tables[table_name].columns[where_clause[:keyword_index]].equal += 1
+                            break
 
 
 
