@@ -5,8 +5,11 @@ import selectsProccesing
 
 #df = create_queries_df.create_queries_df()
 
-queries_table = queriesTable.QueriesTables()
+# Create an instance of QueriesTables
+queries_cnt = queriesTable.QueriesTables()
 
-selectsProccesing.queries_counter(queriesTable)
+# Run the queries_counter function
+queries_cnt = selectsProccesing.queries_counter(queries_cnt)
 
-print(queries_table)
+# Print the result
+print(queries_cnt)

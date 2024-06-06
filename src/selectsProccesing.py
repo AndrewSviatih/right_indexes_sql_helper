@@ -3,10 +3,12 @@ import glob
 import queriesTable
 import pandas as pd
 
-def queries_counter(queries_cnt: queriesTable.QueriesTables):
+def queries_counter(queries_cnt: queriesTable.QueriesTables) -> queriesTable.QueriesTables:
 
-    directory = '../put_queries_here/'
-    text_files = glob.glob(os.path.join(directory, '*.txt *.sql *.log'))
+    directory = '../put_queries_here/'  # Assuming this directory contains your query files
+    text_files = glob.glob(os.path.join(directory, '*.txt')) + \
+                 glob.glob(os.path.join(directory, '*.sql')) + \
+                 glob.glob(os.path.join(directory, '*.log'))
 
     for file_path in text_files:
         with open(file_path, 'r') as file:
@@ -22,19 +24,18 @@ def queries_counter(queries_cnt: queriesTable.QueriesTables):
                         queries_cnt.add_table(table_name)
 
                 WHERE_index = query.upper().find('WHERE')
-                
                 if WHERE_index != -1:
-                    where_clause = query[WHERE_index + 5:]
+                    where_clause = query[WHERE_index + 6:]
                     for keyword in ['>', '<', '=']:
-                        keyword_index = where_clause.upper().find(keyword)
+                        keyword_index = where_clause.find(keyword)
                         if keyword_index != -1:
-                            if where_clause[:keyword_index] not in queries_cnt.tables:
-                                queries_cnt.add_column(table_name, where_clause[:keyword_index])
+                            column_name = where_clause[:keyword_index].strip()
+                            if column_name not in queries_cnt.tables[table_name].columns:
+                                queries_cnt.add_column(table_name, column_name)
                             if keyword in ['>', '<']:
-                                queries_cnt.tables[table_name].columns[where_clause[:keyword_index]].moreLessThan += 1
+                                queries_cnt.tables[table_name].columns[column_name].moreLessThan += 1
                             else:
-                                queries_cnt.tables[table_name].columns[where_clause[:keyword_index]].equal += 1
+                                queries_cnt.tables[table_name].columns[column_name].equal += 1
                             break
 
-
-
+    return queries_cnt
